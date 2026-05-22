@@ -2,3 +2,5 @@ pymupdf
 watchdog
 selenium
 python-dotenv
+beautifulsoup4
+pdfkit

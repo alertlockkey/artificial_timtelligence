@@ -8,6 +8,9 @@ from parser_keuper import parse_keuper_po
 from parser_rram import parse_rram_po
 from parser_buckle import parse_buckle_po
 from parser_true_source import parse_true_source_po
+from parser_retailmds import parse_retailmds_po
+from parser_dhpace import parse_dhpace_po
+from parser_cellular_sales import parse_cellular_sales_po
 from pdf_text import extract_text
 
 
@@ -41,5 +44,14 @@ def parse_po(pdf_path):
 
     if "truesource" in lower or "true source" in lower or "affiliate connect" in lower:
         return parse_true_source_po(pdf_path)
+    
+    if "retail mds" in lower or "retailmds.com" in lower:
+        return parse_retailmds_po(pdf_path)
+
+    if "dh pace" in lower or "dhpace.com" in lower:
+        return parse_dhpace_po(pdf_path)
+
+    if "cellular sales" in lower or "cellularsales.com" in lower:
+        return parse_cellular_sales_po(pdf_path)
 
     raise ValueError("Unknown PO format. Add a new provider parser.")
