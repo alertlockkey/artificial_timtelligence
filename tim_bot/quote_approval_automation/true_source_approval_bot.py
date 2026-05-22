@@ -226,7 +226,7 @@ def add_note(page: Page, note_text: str) -> None:
     note.click()
     note.fill(note_text)
     page.locator("#add-new-note-btn").click()
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
 
 def submit_xeditable_text(page: Page, trigger_selector: str, new_value: str) -> None:
@@ -236,7 +236,7 @@ def submit_xeditable_text(page: Page, trigger_selector: str, new_value: str) -> 
     inp.wait_for(state="visible", timeout=5000)
     inp.fill(new_value)
     click_first_visible(page, ['.editable-container button[type="submit"]', '.editable-buttons button[type="submit"]', '.editable-container i.icon-ok', 'i.icon-ok.icon-white'])
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
 
 def update_po_number(page: Page, po_number: str) -> None:
@@ -261,8 +261,8 @@ def close_upload_popup(page: Page) -> None:
 
 def upload_doc(page: Page, pdf_path: Path) -> None:
     page.locator("#documents-title").click()
-    page.wait_for_timeout(1000)
-    page.locator("#add-new-doc-btn").wait_for(state="visible", timeout=3000)
+    page.wait_for_timeout(2000)
+    page.locator("#add-new-doc-btn").wait_for(state="visible", timeout=5000)
     page.locator("#add-new-doc-btn").click()
     input_file = page.locator('input[type="file"]').first
     try:
@@ -272,9 +272,9 @@ def upload_doc(page: Page, pdf_path: Path) -> None:
         with page.expect_file_chooser() as fc_info:
             page.locator("#plupload-demo-box_browse, a.plupload_add").first.click()
         fc_info.value.set_files(str(pdf_path))
-    page.locator("a.plupload_start").wait_for(state="visible", timeout=3000)
+    page.locator("a.plupload_start").wait_for(state="visible", timeout=5000)
     page.locator("a.plupload_start").click()
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(5000)
 
     # Close the Upload Document popup before continuing.
     # If the modal stays open, it can block the job title edit and Save Job button.
@@ -282,9 +282,9 @@ def upload_doc(page: Page, pdf_path: Path) -> None:
 
 
 def save_job(page: Page) -> None:
-    page.locator("#createjobbottom").wait_for(state="visible", timeout=3000)
+    page.locator("#createjobbottom").wait_for(state="visible", timeout=5000)
     page.locator("#createjobbottom").click()
-    page.wait_for_load_state("networkidle", timeout=3000)
+    page.wait_for_load_state("networkidle", timeout=5000)
 
 
 def process_true_source_pdf(pdf_path: Path, headless: bool = False, parse_only: bool = False) -> None:

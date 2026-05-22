@@ -8,10 +8,72 @@ import os
 
 from nest_isp_upload import upload_to_nest, archive_files
 from boss_upload import boss_upload, parse_boss_invoice_name
+from ts_upload import ts_upload, parse_true_source_invoice_name
 
 load_dotenv()
 
-# FOR BOSS
+WATCH_FOLDER = Path(os.getenv("DROPBOX_2015"))
+
+
+# -----------------------------------------------------------------------------
+# TRUE SOURCE
+# -----------------------------------------------------------------------------
+
+processed_ts = set()
+
+
+def find_true_source_ready_invoices():
+    """
+    Find True Source invoice PDFs in the 2015 folder.
+
+    Expected filename:
+        trip_no-po_no- INVOICE - LOCATION NAME WO# wo_no INV# inv_no.pdf
+
+    Example:
+        1-05236609- INVOICE - FAMILY DOLLAR WO# 03442788 INV# 56898.pdf
+    """
+    invoices = sorted(WATCH_FOLDER.glob("*- INVOICE - * WO# * INV# *.pdf"))
+    ready = []
+
+    for invoice_pdf in invoices:
+        try:
+            data = parse_true_source_invoice_name(invoice_pdf)
+        except ValueError:
+            continue
+
+        key = (data["po_no"], data["wo_no"], data["inv_no"])
+
+        if key in processed_ts:
+            continue
+
+        ready.append((key, invoice_pdf, data))
+
+    return ready
+
+
+def process_true_source_invoices():
+    ready_invoices = find_true_source_ready_invoices()
+
+    for key, invoice_pdf, data in ready_invoices:
+        po_no = data["po_no"]
+        wo_no = data["wo_no"]
+        inv_no = data["inv_no"]
+
+        print(f"Uploading True Source invoice for PO {po_no}, WO {wo_no}, INV {inv_no}")
+
+        try:
+            ts_upload(invoice_pdf)
+            processed_ts.add(key)
+            print(f"True Source upload completed for PO {po_no}, WO {wo_no}, INV {inv_no}")
+
+        except Exception as e:
+            print(f"True Source upload failed for PO {po_no}, WO {wo_no}, INV {inv_no}: {e}")
+
+
+# -----------------------------------------------------------------------------
+# BOSS
+# -----------------------------------------------------------------------------
+
 processed_boss = set()
 
 
@@ -76,13 +138,15 @@ def process_boss_package():
 
     except Exception as e:
         print(f"Boss upload failed for WO {wo_no}, INV {inv_no}: {e}")
-# END FOR BOSS
-# FOR NEST
-WATCH_FOLDER = Path(os.getenv("DROPBOX_2015"))
+
+
+# -----------------------------------------------------------------------------
+# NEST
+# -----------------------------------------------------------------------------
 
 PATTERN = re.compile(
     r"^(INV|WO) Nest WO# (?P<wo_no>.+?) INV# (?P<inv_no>.+?)\.pdf$",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 processed_pairs = set()
@@ -134,25 +198,32 @@ def process_ready_pairs():
             print(f"Failed upload for WO {wo_no}, INV {inv_no}: {e}")
 
 
+# -----------------------------------------------------------------------------
+# WATCHER
+# -----------------------------------------------------------------------------
+
+def process_all_portals():
+    process_ready_pairs()
+    process_boss_package()
+    process_true_source_invoices()
+
+
 class FolderWatcher(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:
             time.sleep(2)
-            process_ready_pairs()
-            process_boss_package()
+            process_all_portals()
 
     def on_modified(self, event):
         if not event.is_directory:
             time.sleep(2)
-            process_ready_pairs()
-            process_boss_package()
+            process_all_portals()
 
 
 if __name__ == "__main__":
     print(f"Watching folder: {WATCH_FOLDER}")
 
-    process_ready_pairs()
-    process_boss_package()
+    process_all_portals()
 
     observer = Observer()
     observer.schedule(FolderWatcher(), str(WATCH_FOLDER), recursive=False)
@@ -165,4 +236,3 @@ if __name__ == "__main__":
         observer.stop()
 
     observer.join()
-# END FOR NEST
