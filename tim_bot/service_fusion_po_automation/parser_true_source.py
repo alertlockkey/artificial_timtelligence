@@ -14,6 +14,7 @@ def parse_true_source_po(pdf_path: Path) -> dict:
     wo_match = re.search(r"Work Order\s+(WO-\d+)", text, re.I)
     ts_pin_match = re.search(r"WO-\d+\s+PIN\s+(\d+)", text, re.I)
 
+    customer_name_match = re.search(r"Customer Name:\s*(.+)", text, re.I)
     store_number_match = re.search(r"Site Store Number:\s*(.+)", text, re.I)
     priority_match = re.search(r"Work Order Priority:\s*(.+)", text, re.I)
     skill_type_match = re.search(r"Skill Type:\s*(.+)", text, re.I)
@@ -85,10 +86,17 @@ def parse_true_source_po(pdf_path: Path) -> dict:
 
     scope_text = clean(scope_text).lstrip("/").strip()
 
-    location_name = f"T-MOBILE {store_number}".strip()
+    customer_location_raw = clean(customer_name_match.group(1)) if customer_name_match else ""
+
+    # Remove anything in parentheses, then remove trailing address after " - "
+    customer_location_base = re.sub(r"\s*\(.*?\)", "", customer_location_raw)
+    customer_location_base = re.split(r"\s+-\s+", customer_location_base)[0]
+    customer_location_base = clean(customer_location_base)
+
+    location_name = f"{customer_location_base} {store_number}".strip()
 
     job_description = f"""{skill_type}, {scope_text}
-"""
+    """
 
     notes_for_techs = f"""YOU ARE REQUIRED TO UTILIZE THE IVR TO CHECK IN AND OUT, FAILURE TO DO SO MAY RESULT IN NONPAYMENT OF SERVICES BILLED.
 
